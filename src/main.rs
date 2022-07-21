@@ -24,7 +24,7 @@ fn main() {
         println!("Type <<create_account>> to create a new account on the blockchain\n");
         println!("Type <<transfer>> to transfer funds from one account to another");
         println!("Type <<read_balance>> to read the balance of an existing account");
-        println!("Type <<exit>> to leave this CLI");
+        println!("Type <<exit>> or press CTRL-C to leave this CLI and end the blockchain");
         'console: while running {
 
             command.clear();
