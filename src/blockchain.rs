@@ -2,7 +2,6 @@ use std::{thread, time};
 use std::collections::VecDeque;
 use std::time::Duration;
 
-const BLOCK_MINING_TIME: Duration = time::Duration::from_secs(1);
 
 #[derive(PartialEq, Copy, Clone)]
 pub struct Account {
@@ -33,6 +32,7 @@ pub struct Block{
 
 // #[derive(Copy, Clone)]
 pub struct Blockchain {
+    pub running: bool,
     pub miner: Account,
     pub accounts: Vec<Account>,
     pub transaction_queue: VecDeque<Transaction>,
@@ -42,7 +42,8 @@ pub struct Blockchain {
 
 impl Blockchain{
     pub fn new() ->  Blockchain{
-        let mut b:Blockchain = Blockchain{
+        let mut b = Blockchain{
+            running: false,
             miner: Account { public_key: 0, funds: 10000000000000000000000000000 },
             accounts: Vec::new(),
             transaction_queue: VecDeque::new(),
@@ -53,20 +54,7 @@ impl Blockchain{
         b
     }
 
-    pub fn start_node(&mut self){
-        /***
-            Main Loop
-            Wait 10s, handle received transactions
-        */
-        // let handle = thread::spawn(|| {
 
-        loop {
-            thread::sleep(BLOCK_MINING_TIME);
-            self.mine();
-        }
-        // });
-
-    }
 
     pub fn transfer(&mut self, send: u64, receive: u64, val: u128){
         let & s = &self.accounts[send as usize];
@@ -158,9 +146,12 @@ impl Blockchain{
     }
 
     pub fn read_balance(&self, public_key: u64){
-        println!("{}",self.accounts[public_key as usize].funds);
+        println!("Balance for account {} : {}",public_key, self.accounts[public_key as usize].funds);
     }
 
+    pub fn set_running(&mut self, val: bool){
+        self.running = val;
+    }
 
 }
 
