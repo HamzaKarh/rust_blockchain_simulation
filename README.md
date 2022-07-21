@@ -1,6 +1,7 @@
 This blockchain simulation was completed as an assessment for Webisoft.
 
 `cargo build`
+
 `cargo run`
 
 Feel free to change the BLOCK_MINING_TIME constant on main.rs to accommodate to the console.
