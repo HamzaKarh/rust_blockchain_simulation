@@ -1,6 +1,4 @@
-use std::{thread, time};
 use std::collections::VecDeque;
-use std::time::Duration;
 
 
 #[derive(PartialEq, Copy, Clone)]
@@ -85,7 +83,7 @@ impl Blockchain{
         let mut block_transactions: VecDeque<Transaction> = VecDeque::new();
         let mut current_transaction: Transaction;
         // Looping through all queued transactions
-        for i in 0..self.transaction_queue.len(){
+        for _ in 0..self.transaction_queue.len(){
             current_transaction = self.transaction_queue.pop_front().unwrap();
             // Switch to handle both types of transactions
             match current_transaction.kind {
