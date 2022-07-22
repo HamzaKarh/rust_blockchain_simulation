@@ -1,5 +1,5 @@
 use crate::blockchain::Blockchain;
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::time::{Duration, SystemTime};
 use std::{io, thread};
 mod blockchain;
@@ -14,20 +14,25 @@ fn main() {
         handle_console(running, send);
     });
 
+    handle_blockchain(recv);
+
+    thr.join().unwrap();
+}
+
+fn handle_blockchain(recv: Receiver<Vec<u8>>) {
     let mut b = Blockchain::new();
-    while !b.running  {
+    while !b.running {
         match recv.try_recv() {
             Ok(i) => {
-                if i.first() == None{
+                if i.first() == None {
                     continue;
                 }
-                if *i.first().unwrap() == 0 as u8{
+                if *i.first().unwrap() == 0 as u8 {
                     b.set_running(true);
-                } else if  *i.first().unwrap() == 4 as u8{
+                } else if *i.first().unwrap() == 4 as u8 {
                     println!("Exiting without starting the blockchain? Alright... bye!");
-                    return
-                }
-                else {
+                    return;
+                } else {
                     println!(" \n \n \n !!!! Error : Please start the blockchain first");
                 }
             }
@@ -36,7 +41,6 @@ fn main() {
                 continue;
             }
         }
-
     }
     let start_time = SystemTime::now();
     while b.running {
@@ -46,19 +50,13 @@ fn main() {
             }
             Err(_) => {}
         }
-        if start_time.elapsed().unwrap().as_secs() % BLOCK_MINING_TIME.as_secs()  < 1{
+        if start_time.elapsed().unwrap().as_secs() % BLOCK_MINING_TIME.as_secs() < 1 {
             b.mine();
             thread::sleep(Duration::from_secs(1));
         }
-
-
     }
 
     println!("EXITING....");
-
-    thr.join().unwrap();
-
-
 }
 
 fn handle_console(mut running: bool, send: Sender<Vec<u8>>) {
@@ -74,7 +72,6 @@ fn handle_console(mut running: bool, send: Sender<Vec<u8>>) {
     println!("Type <<read_balance>> to read the balance of an existing account");
     println!("Type <<exit>> or press CTRL-C to leave this CLI and end the blockchain");
     while running {
-
         command.clear();
         io::stdin().read_line(&mut command).unwrap();
 
@@ -83,18 +80,15 @@ fn handle_console(mut running: bool, send: Sender<Vec<u8>>) {
             "start_node\n" => {
                 // Starting a new thread for the blockchain
                 action.push(0);
-
             }
             "create_account\n" => {
                 action.push(1);
             }
             "transfer\n" => {
                 action = handle_transfer();
-
             }
             "read_balance\n" => {
                 action = handle_read();
-
             }
             "exit\n" => {
                 action.push(3);
@@ -112,7 +106,7 @@ fn handle_console(mut running: bool, send: Sender<Vec<u8>>) {
 }
 
 fn handle_read() -> Vec<u8> {
-    let mut action:Vec<u8> = Vec::new();
+    let mut action: Vec<u8> = Vec::new();
     let mut ok = false;
     while !ok {
         println!("test");
@@ -135,14 +129,13 @@ fn handle_read() -> Vec<u8> {
                 // break;
             }
         };
-
     }
     action
 }
 
-fn handle_transfer()-> Vec<u8>{
+fn handle_transfer() -> Vec<u8> {
     let mut ok = false;
-    let mut action:Vec<u8>= Vec::new();
+    let mut action: Vec<u8> = Vec::new();
     while !ok {
         action.push(2);
         println!("Please enter sending account number for transfer");
@@ -186,7 +179,10 @@ fn handle_commands(commands: Vec<u8>, b: &mut Blockchain) {
 
         4 => b.set_running(false),
 
-        _ => println!("Error: an unknown command slipped through the cracks command : {}", commands[0]),
+        _ => println!(
+            "Error: an unknown command slipped through the cracks command : {}",
+            commands[0]
+        ),
     }
     // }
 }
