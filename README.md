@@ -1,6 +1,7 @@
 This blockchain simulation was completed as an assessment for Webisoft.
 
 `cargo build`
+
 `cargo run`
 
 Miner/accounts[0]  starts with all the coin
