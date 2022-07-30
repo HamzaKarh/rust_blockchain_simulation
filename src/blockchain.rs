@@ -1,9 +1,19 @@
 use std::collections::VecDeque;
+use std::u64::MAX;
 
 #[derive(PartialEq, Copy, Clone)]
 pub struct Account {
     pub public_key: u64,
     pub funds: u128,
+}
+
+impl Account {
+    pub fn new() -> Account {
+        return Account {
+            public_key: MAX,
+            funds: 0,
+        };
+    }
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -53,26 +63,42 @@ impl Blockchain {
     }
 
     pub fn transfer(&mut self, send: u64, receive: u64, val: u128) {
-        let &s = &self.accounts[send as usize];
-        let &r = &self.accounts[receive as usize];
-        let transaction: Transaction = Transaction {
-            id: -1, //Initializing at -1. We will give the real transaction id during mining
-            kind: TransactionType::FundTransfer,
-            sender: s,
-            receiver: r,
-            value: val,
-        };
-        self.transaction_queue.push_back(transaction);
-        // println!("Current transactions : {:?}", self.transaction_queue);
+        let mut ok_status = true;
+        let mut s = Account::new();
+        match &self.get_account(send) {
+            None => {
+                println!("Error, sending account ({}) not found", send);
+                ok_status = false;
+            }
+            Some(i) => s = **i,
+        }
+        let mut r = Account::new();
+        match &self.get_account(receive) {
+            None => {
+                println!("Error, receiving account ({}) not found", receive);
+                ok_status = false;
+            }
+            Some(i) => r = **i,
+        }
+        if ok_status {
+            let transaction: Transaction = Transaction {
+                id: -1, //Initializing at -1. We will give the real transaction id during mining
+                kind: TransactionType::FundTransfer,
+                sender: s,
+                receiver: r,
+                value: val,
+            };
+            self.transaction_queue.push_back(transaction);
+        }
     }
 
-    pub fn create_account(&mut self) {
+    pub fn create_account(&mut self, id: u64, funds: u128) {
         let transaction: Transaction = Transaction {
-            id: -1, //Initializing at -1. We will give the real transaction id during mining
+            id: id as i128, //Initializing at -1. We will give the real transaction id during mining
             kind: TransactionType::AccountCreation,
             sender: self.miner,
             receiver: self.miner,
-            value: 0,
+            value: funds,
         };
         self.transaction_queue.push_front(transaction);
     }
@@ -87,12 +113,21 @@ impl Blockchain {
             match current_transaction.kind {
                 // Account creation
                 TransactionType::AccountCreation => {
-                    let account: Account = Account {
-                        public_key: self.accounts.len() as u64,
-                        funds: 0,
-                    };
-                    println!("Successfully created account {}", account.public_key);
-                    self.accounts.push(account);
+                    let account_id = current_transaction.id;
+                    let account_funds = current_transaction.value;
+                    if !self.account_exists(account_id as u64) {
+                        let account: Account = Account {
+                            public_key: account_id as u64,
+                            funds: account_funds,
+                        };
+                        println!(
+                            "Successfully created account {} with {} coins",
+                            account.public_key, account.funds
+                        );
+                        self.accounts.push(account);
+                    } else {
+                        println!("Failed to create account {}, ID already exists", account_id);
+                    }
                 }
                 // Fund transfer
                 TransactionType::FundTransfer => {
@@ -120,13 +155,10 @@ impl Blockchain {
                         );
                         continue;
                     }
-
-                    self.accounts
-                        .get_mut(current_transaction.sender.public_key as usize)
+                    self.get_account(current_transaction.sender.public_key)
                         .unwrap()
                         .funds -= current_transaction.value;
-                    self.accounts
-                        .get_mut(current_transaction.receiver.public_key as usize)
+                    self.get_account(current_transaction.receiver.public_key)
                         .unwrap()
                         .funds += current_transaction.value;
 
@@ -156,14 +188,39 @@ impl Blockchain {
         self.mined_blocks.push_back(block);
     }
 
-    pub fn read_balance(&self, public_key: u64) {
-        println!(
-            "Balance for account {} : {}",
-            public_key, self.accounts[public_key as usize].funds
-        );
+    pub fn read_balance(&mut self, public_key: u64) -> i128 {
+        match &self.get_account(public_key) {
+            None => {
+                println!("Error, account ({}) not found", public_key);
+            }
+            Some(i) => {
+                println!("Balance for account {} : {}", public_key, i.funds);
+                return i.funds as i128;
+            }
+        }
+        -1
     }
 
     pub fn set_running(&mut self, val: bool) {
         self.running = val;
+    }
+
+    pub fn account_exists(&mut self, id: u64) -> bool {
+        for i in 1..self.accounts.len() {
+            if self.accounts[i].public_key == id {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn get_account(&mut self, id: u64) -> Option<&mut Account> {
+        for i in 0..self.accounts.len() {
+            if self.accounts[i].public_key == id {
+                return Some(&mut self.accounts[i]);
+            }
+        }
+        println!("Did not find account {}", id);
+        None
     }
 }
